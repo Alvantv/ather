@@ -8,7 +8,7 @@ local VirtualInputManager = game:GetService("VirtualInputManager")
 local LocalPlayer = Players.LocalPlayer
 
 -- Load Wind UI
-local AetherUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/AetherUI/main/dist/main.lua"))()
+local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
 
 -- Variables
 local autoCast = false
@@ -94,7 +94,7 @@ local function SellAll()
 end
 
 -- Create Window
-local Window = AetherUI:CreateWindow({
+local Window = WindUI:CreateWindow({
     Title = "Aether Hub | Go Fishing 🐟",
     Icon = "rbxassetid://10723434711",
     Author = "Made By ge8266 on Discord!⭐",
@@ -132,7 +132,7 @@ Farm:Toggle({
                 end
             end
         end)
-        AetherUI:Notify(v and "Auto Cast Enabled!" or "Auto Cast Disabled!", 3)
+        WindUI:Notify(v and "Auto Cast Enabled!" or "Auto Cast Disabled!", 3)
     end
 })
 
@@ -148,7 +148,7 @@ Farm:Toggle({
                 end
             end
         end)
-        AetherUI:Notify(v and "Auto Catch Enabled!" or "Auto Catch Disabled!", 3)
+        WindUI:Notify(v and "Auto Catch Enabled!" or "Auto Catch Disabled!", 3)
     end
 })
 
@@ -172,7 +172,7 @@ Farm:Toggle({
                 end
             end
         end)
-        AetherUI:Notify(v and "Auto Target Enabled!" or "Auto Target Disabled!", 3)
+        WindUI:Notify(v and "Auto Target Enabled!" or "Auto Target Disabled!", 3)
     end
 })
 
@@ -188,7 +188,7 @@ Farm:Toggle({
                 SellAll()
             end
         end)
-        AetherUI:Notify(v and "Auto Sell Enabled!" or "Auto Sell Disabled!", 3)
+        WindUI:Notify(v and "Auto Sell Enabled!" or "Auto Sell Disabled!", 3)
     end
 })
 
@@ -228,7 +228,7 @@ Zone:Toggle({
                 end
             end
         end)
-        AetherUI:Notify(v and "Auto Zone Enabled!" or "Auto Zone Disabled!", 3)
+        WindUI:Notify(v and "Auto Zone Enabled!" or "Auto Zone Disabled!", 3)
     end
 })
 
@@ -248,7 +248,7 @@ Zone:Button({
     Callback = function()
         if Lives() then
             LocalPlayer.Character.HumanoidRootPart.CFrame = selectedZone + Vector3.new(0, 3, 0)
-            AetherUI:Notify("Teleported to zone!", 3)
+            WindUI:Notify("Teleported to zone!", 3)
         end
     end
 })
@@ -275,7 +275,7 @@ Shop:Button({
     Callback = function()
         local args = {[1] = selectedRod, [2] = "rods", [3] = "fishingSettings", [4] = "oneTime"}
         ReplicatedStorage.events.fishing.canShopPurchase:InvokeServer(unpack(args))
-        AetherUI:Notify("Bought " .. selectedRod .. "!", 3)
+        WindUI:Notify("Bought " .. selectedRod .. "!", 3)
     end
 })
 
@@ -295,7 +295,7 @@ Shop:Button({
             local args = {[1] = selectedBait, [2] = "baits", [3] = "fishingSettings", [4] = "manyTime"}
             ReplicatedStorage.events.fishing.canShopPurchase:InvokeServer(unpack(args))
         end
-        AetherUI:Notify("Bought 10x " .. selectedBait .. "!", 3)
+        WindUI:Notify("Bought 10x " .. selectedBait .. "!", 3)
     end
 })
 
@@ -309,7 +309,7 @@ Shop:Button({
                 codes = codes + 1
             end
         end
-        AetherUI:Notify("Redeemed " .. codes .. " codes!", 3)
+        WindUI:Notify("Redeemed " .. codes .. " codes!", 3)
     end
 })
 
@@ -320,7 +320,7 @@ Misc:Button({
     Title = "Copy Discord Link",
     Callback = function()
         setclipboard("https://discord.gg/D679qytx")
-        AetherUI:Notify("Discord link copied!", 3)
+        WindUI:Notify("Discord link copied!", 3)
     end
 })
 
@@ -331,5 +331,5 @@ Misc:Paragraph({
 
 -- Initial Notification
 task.wait(1)
-AetherUI:Notify("Aether Hub | Go Fish loaded! 🐟", 5)
+WindUI:Notify("Aether Hub | Go Fish loaded! 🐟", 5)
 print("✅ Aeter Hub | Go Fish loaded successfully!")
