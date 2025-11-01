@@ -8,7 +8,13 @@ local VirtualInputManager = game:GetService("VirtualInputManager")
 local LocalPlayer = Players.LocalPlayer
 
 -- Load Wind UI
-local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+local success, WindUI = pcall(function()
+    return loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+end)
+if not success then
+    warn("Failed to load WindUI: " .. tostring(WindUI))
+    return
+end
 
 -- Variables
 local autoCast = false
@@ -21,16 +27,49 @@ local sellAmount = 50
 local freezeChar = false
 local selectedZone = CFrame.new(942.536377, 127.545708, 254.444763)
 
--- Zones
-local zones = {
-    ["Default Isle"] = CFrame.new(942.536377, 127.545708, 254.444763),
-    ["Volcano Isle"] = CFrame.new(829.335938, 128.694641, 926.749512),
-    ["Snowy Biome"] = CFrame.new(2192.81934, 132.483459, 262.021057),
-    ["Deep Waters"] = CFrame.new(-22.3140888, 129.08902, -1377.86743),
-    ["Ancient Ocean"] = CFrame.new(797.303894, 125.975601, -2088.22656),
-    ["Toxic Zone"] = CFrame.new(3417.6167, 126.026093, -1539.51465),
-    ["Mansion Island"] = CFrame.new(4058.69507, 125.416229, 428.03006)
-}
+-- Auto loops
+task.spawn(function()
+    while true do
+        if autoCast and Lives() and not LocalPlayer.fishing.general.activeFishing.Value then
+            EquipRod()
+            local oldValue = LocalPlayer.gui.autofishing.Value
+            LocalPlayer.gui.autofishing.Value = true
+            VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, nil, 0)
+            repeat task.wait() until LocalPlayer.fishing.general.activeFishing.Value
+            VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, nil, 0)
+            LocalPlayer.gui.autofishing.Value = oldValue
+        end
+        task.wait(1)
+    end
+end)
+
+task.spawn(function()
+    while true do
+        if autoCatch and LocalPlayer.fishing.general.activeFighting.Value then
+            ReplicatedStorage.events.fishing.fightClick:FireServer()
+        end
+        task.wait()
+    end
+end)
+
+task.spawn(function()
+    while true do
+        if autoTarget then
+            local targetFrame = LocalPlayer.PlayerGui.fishing.targetFrame
+            for _, target in ipairs(targetFrame:GetChildren()) do
+                if target:IsA("GuiObject") and target.Name == 'target' and target:FindFirstChild('ImageButton') then
+                    game:GetService('GuiService').SelectedObject = target.ImageButton
+                    task.wait()
+                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+                    task.wait()
+                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+                end
+                task.wait(0.08)
+            end
+        end
+        task.wait()
+    end
+end)
 
 -- Functions
 local function Lives()
@@ -93,22 +132,84 @@ local function SellAll()
     end
 end
 
+local TweenService = game:GetService("TweenService")
+
+local function FlyTo(targetCFrame)
+    if not Lives() then return end
+    local hrp = LocalPlayer.Character.HumanoidRootPart
+    local currentPos = hrp.Position
+    local targetPos = targetCFrame.Position
+
+    -- Check if already at the target position (within 5 units)
+    if (currentPos - targetPos).Magnitude < 5 then
+        return -- Already at position, stop flying
+    end
+
+    hrp.Anchored = false
+
+    -- Phase 1: Go up vertically 50 units to avoid obstacles
+    local upPos = Vector3.new(currentPos.X, currentPos.Y + 50, currentPos.Z)
+    local tweenInfo1 = TweenInfo.new(0.25, Enum.EasingStyle.Linear)
+    local tween1 = TweenService:Create(hrp, tweenInfo1, {CFrame = CFrame.new(upPos)})
+    tween1:Play()
+    tween1.Completed:Wait()
+
+    -- Phase 2: Move horizontally to target X,Z at moderate speed
+    local horizontalPos = Vector3.new(targetPos.X, upPos.Y, targetPos.Z)
+    local distance2 = (horizontalPos - upPos).Magnitude
+    local speed2 = 200
+    local time2 = distance2 / speed2
+    local tweenInfo2 = TweenInfo.new(time2, Enum.EasingStyle.Linear)
+    local tween2 = TweenService:Create(hrp, tweenInfo2, {CFrame = CFrame.new(horizontalPos)})
+    tween2:Play()
+    tween2.Completed:Wait()
+
+    -- Phase 3: Descend vertically to target Y
+    local finalPos = Vector3.new(targetPos.X, targetPos.Y, targetPos.Z)
+    local tweenInfo3 = TweenInfo.new(0.25, Enum.EasingStyle.Linear)
+    local tween3 = TweenService:Create(hrp, tweenInfo3, {CFrame = CFrame.new(finalPos)})
+    tween3:Play()
+    tween3.Completed:Wait()
+
+    -- Set final CFrame with rotation
+    hrp.CFrame = targetCFrame
+end
+
 -- Create Window
 local Window = WindUI:CreateWindow({
-    Title = "Aether Hub | Go Fishing 🐟",
-    Icon = "rbxassetid://10723434711",
-    Author = "Made By ge8266 on Discord!⭐",
+    Title = "Aether Hub | Go Fishing 🎃",
+    Icon = "rocket",
+    Author = "Made By ge8266",
     Folder = "AetherHub/GoFish",
     Size = UDim2.fromOffset(480, 360),
     Transparent = false,
     Theme = "Dark",
     SideBarWidth = 170,
+    OpenButton = {
+        Title = "Open Aether Hub UI",
+        CornerRadius = UDim.new(1,0),
+        StrokeThickness = 3,
+        Enabled = true,
+        Draggable = true,
+        OnlyMobile = false,
+        Color = ColorSequence.new(
+            Color3.fromHex("fdd700"),
+            Color3.fromHex("e7ff2f")
+        )
+    }
 })
+
+do
+    Window:Tag({
+        Title = "RANK: PELER",
+        Icon = "crown",
+        Color = Color3.fromHex("#f7b605")
+    })
+end
 
 -- Tabs
 local Farm = Window:Tab({ Title = "Auto Farm", Icon = "fish" })
-local Zone = Window:Tab({ Title = "Zones", Icon = "map" })
-local Shop = Window:Tab({ Title = "Shop", Icon = "shopping-cart" })
+local other = Window:Tab({ Title = "Ga Tau", Icon = "captions" })
 local Misc = Window:Tab({ Title = "Misc", Icon = "settings" })
 
 -- Farm Tab
@@ -176,130 +277,92 @@ Farm:Toggle({
     end
 })
 
-Farm:Section({ Title = "Auto Sell" })
+Farm:Section({ Title = "Paket Halloween" })
 
 Farm:Toggle({
-    Title = "Auto Sell Fish",
+    Title = "Paket Halloween (Halloween Only)",
+    Desc = "Pake pake aja lah kontol.",
     Default = false,
     Callback = function(v)
-        autoSell = v
-        task.spawn(function()
-            while autoSell and task.wait(5) do
-                SellAll()
-            end
-        end)
-        WindUI:Notify(v and "Auto Sell Enabled!" or "Auto Sell Disabled!", 3)
-    end
-})
-
-Farm:Slider({
-    Title = "Sell When Have Fish",
-    Value = { Min = 10, Max = 200, Default = 50 },
-    Callback = function(v)
-        sellAmount = v
-    end
-})
-
--- Zone Tab
-Zone:Section({ Title = "Fishing Zones" })
-
-Zone:Dropdown({
-    Title = "Select Zone",
-    Values = {"Default Isle", "Volcano Isle", "Snowy Biome", "Deep Waters", "Ancient Ocean", "Toxic Zone", "Mansion Island"},
-    Default = "Default Isle",
-    Callback = function(v)
-        selectedZone = zones[v]
-    end
-})
-
-Zone:Toggle({
-    Title = "Auto Teleport to Zone",
-    Default = false,
-    Callback = function(v)
-        autoZone = v
-        task.spawn(function()
-            while autoZone and task.wait(2) do
-                if Lives() and not isSelling then
-                    SafeZone(selectedZone)
-                    LocalPlayer.Character.HumanoidRootPart.CFrame = selectedZone + Vector3.new(0, 3, 0)
-                    if freezeChar then
-                        LocalPlayer.Character.HumanoidRootPart.Anchored = true
+        if v and Lives() then
+            -- Fly to specified position
+            FlyTo(CFrame.new(Vector3.new(1114, 126, 748)) * CFrame.Angles(0, math.rad(180), 0))
+            -- Enable auto features
+            autoCast = true
+            autoCatch = true
+            autoTarget = true
+            -- Start auto cast loop
+            task.spawn(function()
+                while autoCast and task.wait(1) do
+                    if Lives() and not LocalPlayer.fishing.general.activeFishing.Value then
+                        EquipRod()
+                        local oldValue = LocalPlayer.gui.autofishing.Value
+                        LocalPlayer.gui.autofishing.Value = true
+                        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, nil, 0)
+                        repeat task.wait() until LocalPlayer.fishing.general.activeFishing.Value
+                        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, nil, 0)
+                        LocalPlayer.gui.autofishing.Value = oldValue
                     end
                 end
+            end)
+            -- Start auto catch loop
+            task.spawn(function()
+                while autoCatch and task.wait() do
+                    if LocalPlayer.fishing.general.activeFighting.Value then
+                        ReplicatedStorage.events.fishing.fightClick:FireServer()
+                    end
+                end
+            end)
+            -- Start auto target loop
+            task.spawn(function()
+                while autoTarget and task.wait() do
+                    local targetFrame = LocalPlayer.PlayerGui.fishing.targetFrame
+                    for _, target in ipairs(targetFrame:GetChildren()) do
+                        if target:IsA("GuiObject") and target.Name == 'target' and target:FindFirstChild('ImageButton') then
+                            game:GetService('GuiService').SelectedObject = target.ImageButton
+                            task.wait()
+                            VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+                            task.wait()
+                            VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+                        end
+                        task.wait(0.08)
+                    end
+                end
+            end)
+            -- Freeze character
+            freezeChar = true
+            LocalPlayer.Character.HumanoidRootPart.Anchored = true
+            WindUI:Notify("Paket Halloween Activated! Teleported, autos enabled, and frozen.", 3)
+        else
+            -- Disable when toggled off
+            autoCast = false
+            autoCatch = false
+            autoTarget = false
+            freezeChar = false
+            if Lives() then
+                LocalPlayer.Character.HumanoidRootPart.Anchored = false
             end
-        end)
-        WindUI:Notify(v and "Auto Zone Enabled!" or "Auto Zone Disabled!", 3)
-    end
-})
-
-Zone:Toggle({
-    Title = "Freeze Character",
-    Default = false,
-    Callback = function(v)
-        freezeChar = v
-        if Lives() then
-            LocalPlayer.Character.HumanoidRootPart.Anchored = v
+            WindUI:Notify("Paket Halloween Deactivated!", 3)
         end
     end
 })
 
-Zone:Button({
-    Title = "Teleport Now",
+Farm:Button({
+    Title = "Infinite Money",
+    Locked = true,
     Callback = function()
-        if Lives() then
-            LocalPlayer.Character.HumanoidRootPart.CFrame = selectedZone + Vector3.new(0, 3, 0)
-            WindUI:Notify("Teleported to zone!", 3)
+        if LocalPlayer:FindFirstChild("leaderstats") and LocalPlayer.leaderstats:FindFirstChild("Money") then
+            LocalPlayer.leaderstats.Money.Value = 999999999
+            WindUI:Notify("Infinite Money Set!", 3)
+        else
+            WindUI:Notify("Money stat not found!", 3)
         end
     end
 })
 
--- Shop Tab
-Shop:Section({ Title = "Buy Items" })
+-- Ga Tau
 
-local rods = {"Steel Rod", "Gold Rod", "Diamond Rod", "Amethyst Rod", "Angel Rod", "Rainbow Rod"}
-local baits = {"Apple", "Carrot", "Grapes", "Worm", "Fish Bait", "Gold", "Diamond", "Rainbow"}
-local selectedRod = "Steel Rod"
-local selectedBait = "Apple"
-
-Shop:Dropdown({
-    Title = "Select Rod",
-    Values = rods,
-    Default = "Steel Rod",
-    Callback = function(v)
-        selectedRod = v
-    end
-})
-
-Shop:Button({
-    Title = "Buy Rod",
-    Callback = function()
-        local args = {[1] = selectedRod, [2] = "rods", [3] = "fishingSettings", [4] = "oneTime"}
-        ReplicatedStorage.events.fishing.canShopPurchase:InvokeServer(unpack(args))
-        WindUI:Notify("Bought " .. selectedRod .. "!", 3)
-    end
-})
-
-Shop:Dropdown({
-    Title = "Select Bait",
-    Values = baits,
-    Default = "Apple",
-    Callback = function(v)
-        selectedBait = v
-    end
-})
-
-Shop:Button({
-    Title = "Buy Bait (10x)",
-    Callback = function()
-        for i = 1, 10 do
-            local args = {[1] = selectedBait, [2] = "baits", [3] = "fishingSettings", [4] = "manyTime"}
-            ReplicatedStorage.events.fishing.canShopPurchase:InvokeServer(unpack(args))
-        end
-        WindUI:Notify("Bought 10x " .. selectedBait .. "!", 3)
-    end
-})
-
-Shop:Button({
+other:Button({
     Title = "Redeem All Codes",
     Callback = function()
         local codes = 0
