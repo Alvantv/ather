@@ -11,8 +11,10 @@ while task.wait() do
 	end
 	for _, Fish in next, fishList do
 		task.spawn(function()
-			Remote:FireServer(Fish:GetAttribute("UID"))
-			Remote:FireServer(Fish:GetAttribute("UID"), true)
+			for i = 1, 10 do
+				Remote:FireServer(Fish:GetAttribute("UID"))
+				Remote:FireServer(Fish:GetAttribute("UID"), true)
+			end
 		end)
 	end
 end
