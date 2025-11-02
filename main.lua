@@ -201,8 +201,16 @@ local Window = WindUI:CreateWindow({
 
 do
     Window:Tag({
-        Title = "RANK: PELER",
+        Title = "RANK: FREE",
         Icon = "crown",
+        Color = Color3.fromHex("#f7b605")
+    })
+end
+
+do
+    Window:Tag({
+        Title = "TIME: LIFETIME",
+        Icon = "clock",
         Color = Color3.fromHex("#f7b605")
     })
 end
